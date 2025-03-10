@@ -1,17 +1,13 @@
 const mongoose = require('mongoose');
 
 const userVehicleSchema = new mongoose.Schema({
-  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-  vehicle: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'VehicleSpecification',
-    required: true
-  },
-  nickname: { type: String, required: true },
-  registrationNumber: { type: String, required: true },
-  currentMileage: { type: Number, required: true },
-  licenseDateExpiry: { type: Date, required: true },
-  insuranceDateExpiry: { type: Date, required: true }
-});
+  vehicle: { type: mongoose.Schema.Types.ObjectId, ref: 'Vehicle', required: true }, // Foreign key to Vehicle model
+  user_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  registration_number: { type: String, required: true },
+  current_odometer_reading: { type: Number, required: true },
+  next_service_reading: { type: Number, required: true },
+  license_expiry_date: { type: Date, required: true },
+  preferred_brand: { type: mongoose.Schema.Types.ObjectId, ref: 'Brand', required: true }
+}, { collection: 'Owned Vehicles' });
 
 module.exports = mongoose.model('UserVehicle', userVehicleSchema);
