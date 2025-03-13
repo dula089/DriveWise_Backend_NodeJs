@@ -7,6 +7,7 @@ const EO = require('../models/EngineOil');
 const TO = require('../models/TransmissionOil');
 const AirFilter = require('../models/AirFilter');
 const UserVehicle = require('../models/UserVehicle');
+const User = require('../models/user');
 
 const router = express.Router();
 
@@ -56,6 +57,7 @@ router.post('/addVehicle', async (req, res) => {
   
     // Create a new UserVehicle entry linking the user to the existing vehicle
     const newUserVehicle = new UserVehicle({
+      // vehicle: vehicle.vehicle_id,
       vehicle: vehicle._id, 
       user_id: userId,
       registration_number,
@@ -68,11 +70,16 @@ router.post('/addVehicle', async (req, res) => {
     await newUserVehicle.save();
   
     // Add the new UserVehicle to the user's vehicle_ids array
-    const user = await User.findById(userId);
-    user.vehicle_ids.push(newUserVehicle._id);
+    // const user = await User.findById(userId);
+    const user = await User.findById(req.body.userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    // user.vehicle_ids.push(vehicle.vehicle_id);
+    user.vehicle_ids.push(vehicle._id);
     await user.save();
   
-    res.status(201).json({ message: 'Vehicle added successfully', vehicleId: vehicle._id });
+    res.status(201).json({ message: 'Vehicle added successfully', vehicleId: vehicle.vehicle_id });
 });
   
 
@@ -83,6 +90,85 @@ router.get('/userVehicles/:userId', async (req, res) => {
 
   res.json(user.vehicle_ids);
 });
+
+// Route: Get All Vehicles (or vehicles for a specific user)
+router.get('/vehicles/:userId', async (req, res) => {
+  try {
+    // Fetch the user's vehicle IDs from the User collection
+    const user = await User.findById(req.params.userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Fetch the user's vehicles from the UserVehicle collection
+    const userVehicles = await UserVehicle.find({ user_id: req.params.userId }).populate('vehicle');
+
+    // Map the data to match the Flutter frontend's expected structure
+    const formattedVehicles = userVehicles.map((userVehicle) => {
+      const vehicle = userVehicle.vehicle;
+      return {
+        id: vehicle._id,
+        nickname: `${vehicle.make} ${vehicle.model}`, // Add a default nickname if not provided
+        imageUrl: 'https://static.carfromjapan.com/spec_8102021a-ee22-42ce-af9b-1c5b998f44ba_640_0', // Add a default image if not provided
+        registrationNumber: userVehicle.registration_number, // From UserVehicle
+        make: vehicle.make,
+        model: vehicle.model,
+        year: vehicle.year,
+        currentMileage: userVehicle.current_odometer_reading, // From UserVehicle
+        licenseDateExpiry: userVehicle.license_expiry_date, // From UserVehicle
+        insuranceDateExpiry: userVehicle.license_expiry_date, // Add a default date if not provided
+        specifications: {
+          'Engine Oil': vehicle.engine_oil,
+          'Transmission Oil': vehicle.transmission_oil,
+          'Air Filter': vehicle.air_filter,
+        },
+      };
+    });
+
+    res.json(formattedVehicles);
+  } catch (error) {
+    console.error('Error fetching vehicles:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// router.get('/vehicles/:userId', async (req, res) => {
+//   try {
+//     // Fetch the user's vehicle IDs from the User collection
+//     const user = await User.findById(req.params.userId);
+//     if (!user) {
+//       return res.status(404).json({ message: 'User not found' });
+//     }
+
+//     // Fetch the vehicle details for each vehicle ID
+//     const vehicles = await Vehicle.find({ _id: { $in: user.vehicle_ids } });
+//     // const vehicles = await Vehicle.find({ vehicle_id: { $in: user.vehicle_ids } });
+
+//     // Map the data to match the Flutter frontend's expected structure
+//     const formattedVehicles = vehicles.map((vehicle) => ({
+//       id: vehicle.vehicle_id,
+//       nickname: `${vehicle.make} ${vehicle.model}`, // Add a default nickname if not provided
+//       imageUrl: 'https://via.placeholder.com/150', // Add a default image if not provided
+//       registrationNumber: vehicle.registration_number,
+//       make: vehicle.make,
+//       model: vehicle.model,
+//       year: vehicle.year,
+//       currentMileage: vehicle.current_odometer_reading,
+//       licenseDateExpiry: vehicle.license_expiry_date,
+//       insuranceDateExpiry: vehicle.license_expiry_date, // Add a default date if not provided
+//       specifications: {
+//         'Engine Oil': vehicle.engine_oil,
+//         'Transmission Oil': vehicle.transmission_oil,
+//         'Air Filter': vehicle.air_filter,
+//       },
+//     }));
+
+//     res.json(formattedVehicles);
+//   } catch (error) {
+//     console.error('Error fetching vehicles:', error);
+//     res.status(500).json({ message: 'Internal server error' });
+//   }
+// });
 
 // Route: Get Brands
 router.get('/brands', async (req, res) => {

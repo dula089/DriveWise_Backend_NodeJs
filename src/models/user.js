@@ -11,6 +11,7 @@ const UserSchema = new mongoose.Schema(
       trim: true,
     },
     password: { type: String, required: true },
+    // vehicle_ids: [{ type: String }],
     vehicle_ids: [{ type: mongoose.Schema.Types.ObjectId, ref: "Vehicle" }], // Supports multiple vehicles
   },
   { timestamps: true }
