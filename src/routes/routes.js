@@ -1,3 +1,5 @@
+// routes.js
+
 const express = require('express');
 
 
@@ -115,6 +117,7 @@ router.get('/vehicles/:userId', async (req, res) => {
         model: vehicle.model,
         year: vehicle.year,
         currentMileage: userVehicle.current_odometer_reading, // From UserVehicle
+        nextService: userVehicle.next_service_reading,
         licenseDateExpiry: userVehicle.license_expiry_date, // From UserVehicle
         insuranceDateExpiry: userVehicle.license_expiry_date, // Add a default date if not provided
         specifications: {
@@ -125,7 +128,62 @@ router.get('/vehicles/:userId', async (req, res) => {
       };
     });
 
-    res.json(formattedVehicles);
+    // Generate upcoming events for all vehicles
+    const upcomingEvents = userVehicles.flatMap((userVehicle) => {
+      const vehicle = userVehicle.vehicle;
+      const events = [];
+
+      // Add license expiry event
+      if (userVehicle.license_expiry_date) {
+        events.push({
+          type: 'License Expiry',
+          date: userVehicle.license_expiry_date,
+          vehicle: `${vehicle.make} ${vehicle.model}`,
+          urgency: userVehicle.license_expiry_date, // Use date for sorting
+        });
+      }
+
+      // Add insurance expiry event
+      if (userVehicle.insurance_expiry_date) {
+        events.push({
+          type: 'Insurance Expiry',
+          date: userVehicle.insurance_expiry_date,
+          vehicle: `${vehicle.make} ${vehicle.model}`,
+          urgency: userVehicle.insurance_expiry_date, // Use date for sorting
+        });
+      }
+
+      // Add next service event (based on mileage)
+      if (userVehicle.next_service_reading && userVehicle.current_odometer_reading) {
+        const mileageDifference = userVehicle.next_service_reading - userVehicle.current_odometer_reading;
+        events.push({
+          type: 'Service Due',
+          date: null, // No date, only mileage
+          mileageDifference: mileageDifference,
+          vehicle: `${vehicle.make} ${vehicle.model}`,
+          urgency: mileageDifference, // Use mileage difference for sorting
+        });
+      }
+
+      return events;
+    });
+
+    // Sort events by urgency (earliest date or lowest mileage difference)
+    upcomingEvents.sort((a, b) => {
+      if (a.date && b.date) {
+        return a.date - b.date; // Sort by date
+      } else if (a.mileageDifference && b.mileageDifference) {
+        return a.mileageDifference - b.mileageDifference; // Sort by mileage difference
+      } else {
+        return 0;
+      }
+    });
+
+    // res.json(formattedVehicles);
+    res.json({
+      vehicles: formattedVehicles,
+      upcomingEvents: upcomingEvents,
+    });
   } catch (error) {
     console.error('Error fetching vehicles:', error);
     res.status(500).json({ message: 'Internal server error' });
@@ -175,5 +233,47 @@ router.get('/brands', async (req, res) => {
   const brands = await Brand.find();
   res.json(brands);
 });
+
+
+// Route: Update Vehicle Mileage
+router.put('/updateMileage', async (req, res) => {
+  const { userId, vehicleId, mileage } = req.body;
+  try {
+    const userVehicle = await UserVehicle.findOne({
+      user_id: userId,
+      vehicle: vehicleId,
+    });
+
+    if (!userVehicle) {
+      return res.status(404).json({ message: 'Vehicle not found for this user' });
+    }
+
+    userVehicle.current_odometer_reading = mileage;
+    await userVehicle.save();
+    res.status(200).json({ message: 'Mileage updated successfully' });
+  } catch (error) {
+    console.error('Error updating mileage:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// router.put('/updateMileage', async (req, res) => {
+//   const { vehicleId, mileage } = req.body;
+
+//   try {
+//     const userVehicle = await UserVehicle.findOne({ vehicle: vehicleId });
+//     if (!userVehicle) {
+//       return res.status(404).json({ message: 'Vehicle not found' });
+//     }
+
+//     userVehicle.current_odometer_reading = mileage;
+//     await userVehicle.save();
+
+//     res.status(200).json({ message: 'Mileage updated successfully' });
+//   } catch (error) {
+//     console.error('Error updating mileage:', error);
+//     res.status(500).json({ message: 'Internal server error' });
+//   }
+// });
 
 module.exports = router;
