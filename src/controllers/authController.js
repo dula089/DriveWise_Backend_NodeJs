@@ -15,7 +15,7 @@ exports.register = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
     const newUser = new User({ username, email, password: hashedPassword });
     await newUser.save();
-    
+
     res.json({ message: "User registered successfully" });
   } catch (error) {
     res.status(500).json({ message: "Server Error", error: error.message });
@@ -32,11 +32,15 @@ exports.login = async (req, res) => {
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
+    // Generate JWT token with 2-minute expiration
     const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
-      expiresIn: "1h",
+      expiresIn: "30d", // ⏳ Token expires in 30 days
     });
 
-    res.json({ token, user: { id: user._id, username: user.username, email: user.email } });
+    res.json({
+      token,
+      user: { id: user._id, username: user.username, email: user.email },
+    });
   } catch (error) {
     res.status(500).json({ message: "Server Error", error: error.message });
   }
@@ -45,4 +49,13 @@ exports.login = async (req, res) => {
 // Protected Route Example
 exports.protectedRoute = (req, res) => {
   res.json({ message: "Welcome to the protected route!", user: req.user });
+};
+exports.logout = async (req, res) => {
+  try {
+    // Invalidate user session by clearing refresh token
+    await User.findByIdAndUpdate(req.user.userId, { refreshToken: null });
+    res.json({ message: "Logged out successfully" });
+  } catch (error) {
+    res.status(500).json({ message: "Server Error", error: error.message });
+  }
 };
