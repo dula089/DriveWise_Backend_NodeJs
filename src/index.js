@@ -14,6 +14,7 @@ app.use(express.json());
 
 // Routes
 app.use("/api/auth", require("./routes/authRoutes"));
+app.use("/api", require("./routes/routes"));
 
 // Error Handling Middleware
 const errorHandler = require("./middleware/errorHandler");
@@ -37,7 +38,7 @@ app.use(errorHandler);
 //   res.json({ message: "Node.js Backend for Flutter is Running!" });
 // });
 
-app.use("/api", routes);
+// app.use("/api", routes);
 
 // Start Server
 

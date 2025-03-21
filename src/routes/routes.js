@@ -10,6 +10,7 @@ const TO = require('../models/TransmissionOil');
 const AirFilter = require('../models/AirFilter');
 const UserVehicle = require('../models/UserVehicle');
 const User = require('../models/user');
+const ServiceRecords = require('../models/ServiceRecords')
 
 const router = express.Router();
 
@@ -260,6 +261,27 @@ router.put('/updateMileage', async (req, res) => {
   } catch (error) {
     console.error('Error updating mileage:', error);
     res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+router.post('/maintenance', async (req, res) => {
+  try {
+    const { user_id, vehicle_id, date, odometer, engine_oil, transmission_oil, airfilters } = req.body;
+
+    const newRecord = new ServiceRecords({
+      user_id: user_id,
+      vehicle_id: vehicle_id,
+      date: date,
+      odometer: odometer,
+      engine_oil: engine_oil,
+      transmission_oil: transmission_oil,
+      airfilters: airfilters
+    });
+
+    await newRecord.save();
+    res.status(201).json({ message: 'Record saved successfully' });
+  } catch (error) {
+    res.status(500).json({ error: 'Error saving record' });
   }
 });
 
