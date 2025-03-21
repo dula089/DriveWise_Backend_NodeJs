@@ -49,7 +49,7 @@ router.get('/years/:make/:model/:engine', async (req, res) => {
 
 // Route: Add Vehicle to User (Link vehicle to user)
 router.post('/addVehicle', async (req, res) => {
-    const { userId, make, model, engine_type, year, registration_number, odometer_reading, next_service_reading, license_expiry_date, preferred_brand_id } = req.body;
+    const { userId, make, model, engine_type, year, registration_number, odometer_reading, next_service_reading, license_expiry_date, insurance_expiry_date, emmissions_expiry_date, preferred_brand, nickname } = req.body;
   
     // Find the vehicle that matches the make, model, engine_type, and year in the Vehicle collection
     const vehicle = await Vehicle.findOne({ make, model, engine_type, year });
@@ -67,7 +67,10 @@ router.post('/addVehicle', async (req, res) => {
       current_odometer_reading: odometer_reading,
       next_service_reading: next_service_reading,
       license_expiry_date: license_expiry_date,
-      preferred_brand: preferred_brand_id
+      insurance_expiry_date: insurance_expiry_date,
+      emmissions_expiry_date: emmissions_expiry_date,
+      preferred_brand: preferred_brand,
+      nickname: nickname
     });
   
     await newUserVehicle.save();
@@ -83,6 +86,38 @@ router.post('/addVehicle', async (req, res) => {
     await user.save();
   
     res.status(201).json({ message: 'Vehicle added successfully', vehicleId: vehicle.vehicle_id });
+});
+
+// Route: Remove added Vehicle from User (Link vehicle to user)
+router.delete('/removeUserVehicle', async (req, res) => {
+  const { userId, vehicleId } = req.body;
+
+  try {
+    // Delete the vehicle from UserVehicle collection
+    const result = await UserVehicle.findOneAndDelete({
+      user_id: userId,
+      vehicle: vehicleId
+    });
+    
+    if (!result) {
+      return res.status(404).json({ message: 'Vehicle not found for this user' });
+    }
+    
+    // Remove the vehicle ID from the user's vehicle_ids array
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    // Filter out the vehicleId from the vehicle_ids array
+    user.vehicle_ids = user.vehicle_ids.filter(id => id.toString() !== vehicleId);
+    await user.save();
+    
+    res.status(200).json({ message: 'Vehicle removed successfully' });
+  } catch (error) {
+    console.error('Error removing vehicle:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
 });
   
 
@@ -111,16 +146,20 @@ router.get('/vehicles/:userId', async (req, res) => {
       const vehicle = userVehicle.vehicle;
       return {
         id: vehicle._id,
-        nickname: `${vehicle.make} ${vehicle.model}`, // Add a default nickname if not provided
+        // nickname: `${vehicle.make} ${vehicle.model}`, // Add a default nickname if not provided
+        nickname: userVehicle.nickname,
         imageUrl: 'https://static.carfromjapan.com/spec_8102021a-ee22-42ce-af9b-1c5b998f44ba_640_0', // Add a default image if not provided
+        // imageUrl: vehicle.imageUrl,
         registrationNumber: userVehicle.registration_number, // From UserVehicle
         make: vehicle.make,
         model: vehicle.model,
+        engine: vehicle.engine_type,
         year: vehicle.year,
         currentMileage: userVehicle.current_odometer_reading, // From UserVehicle
         nextService: userVehicle.next_service_reading,
         licenseDateExpiry: userVehicle.license_expiry_date, // From UserVehicle
-        insuranceDateExpiry: userVehicle.license_expiry_date, // Add a default date if not provided
+        insuranceDateExpiry: userVehicle.insurance_expiry_date,
+        emmissionsDateExpiry: userVehicle.emmissions_expiry_date,
         specifications: {
           'Engine Oil': vehicle.engine_oil,
           'Transmission Oil': vehicle.transmission_oil,
@@ -191,48 +230,15 @@ router.get('/vehicles/:userId', async (req, res) => {
   }
 });
 
-// router.get('/vehicles/:userId', async (req, res) => {
-//   try {
-//     // Fetch the user's vehicle IDs from the User collection
-//     const user = await User.findById(req.params.userId);
-//     if (!user) {
-//       return res.status(404).json({ message: 'User not found' });
-//     }
-
-//     // Fetch the vehicle details for each vehicle ID
-//     const vehicles = await Vehicle.find({ _id: { $in: user.vehicle_ids } });
-//     // const vehicles = await Vehicle.find({ vehicle_id: { $in: user.vehicle_ids } });
-
-//     // Map the data to match the Flutter frontend's expected structure
-//     const formattedVehicles = vehicles.map((vehicle) => ({
-//       id: vehicle.vehicle_id,
-//       nickname: `${vehicle.make} ${vehicle.model}`, // Add a default nickname if not provided
-//       imageUrl: 'https://via.placeholder.com/150', // Add a default image if not provided
-//       registrationNumber: vehicle.registration_number,
-//       make: vehicle.make,
-//       model: vehicle.model,
-//       year: vehicle.year,
-//       currentMileage: vehicle.current_odometer_reading,
-//       licenseDateExpiry: vehicle.license_expiry_date,
-//       insuranceDateExpiry: vehicle.license_expiry_date, // Add a default date if not provided
-//       specifications: {
-//         'Engine Oil': vehicle.engine_oil,
-//         'Transmission Oil': vehicle.transmission_oil,
-//         'Air Filter': vehicle.air_filter,
-//       },
-//     }));
-
-//     res.json(formattedVehicles);
-//   } catch (error) {
-//     console.error('Error fetching vehicles:', error);
-//     res.status(500).json({ message: 'Internal server error' });
-//   }
-// });
-
-// Route: Get Brands
 router.get('/brands', async (req, res) => {
-  const brands = await Brand.find();
-  res.json(brands);
+  try {
+    const brands = await Brand.distinct('name');
+    console.log("Fetched makes:", brands); // just for Debugging
+    res.json(brands);
+  } catch (error) {
+    console.error("Error fetching makes:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
 });
 
 
@@ -257,25 +263,6 @@ router.put('/updateMileage', async (req, res) => {
     res.status(500).json({ message: 'Internal server error' });
   }
 });
-
-// router.put('/updateMileage', async (req, res) => {
-//   const { vehicleId, mileage } = req.body;
-
-//   try {
-//     const userVehicle = await UserVehicle.findOne({ vehicle: vehicleId });
-//     if (!userVehicle) {
-//       return res.status(404).json({ message: 'Vehicle not found' });
-//     }
-
-//     userVehicle.current_odometer_reading = mileage;
-//     await userVehicle.save();
-
-//     res.status(200).json({ message: 'Mileage updated successfully' });
-//   } catch (error) {
-//     console.error('Error updating mileage:', error);
-//     res.status(500).json({ message: 'Internal server error' });
-//   }
-// });
 
 router.post('/maintenance', async (req, res) => {
   try {

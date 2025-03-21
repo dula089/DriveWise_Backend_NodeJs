@@ -9,6 +9,7 @@ const vehicleSchema = new mongoose.Schema({
   engine_oil: { type: String, required: true},
   transmission_oil: { type: String, required: true},
   air_filter: { type: String, required: true},
+  // imageUrl: { type: String, required: true},
 }, { collection: 'Vehicles' });
 
 module.exports = mongoose.model('Vehicle', vehicleSchema);
