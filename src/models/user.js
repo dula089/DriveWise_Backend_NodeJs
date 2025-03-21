@@ -11,10 +11,10 @@ const UserSchema = new mongoose.Schema(
       trim: true,
     },
     password: { type: String, required: true },
-    // vehicle_ids: [{ type: String }],
+    refreshToken: { type: String }, // Stores the refresh token
     vehicle_ids: [{ type: mongoose.Schema.Types.ObjectId, ref: "Vehicle" }], // Supports multiple vehicles
   },
-  { timestamps: true }
-); // Adds createdAt & updatedAt
+  { timestamps: true } // Adds createdAt & updatedAt fields automatically
+);
 
 module.exports = mongoose.model("User", UserSchema);
