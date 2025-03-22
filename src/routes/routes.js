@@ -148,8 +148,8 @@ router.get('/vehicles/:userId', async (req, res) => {
         id: vehicle._id,
         // nickname: `${vehicle.make} ${vehicle.model}`, // Add a default nickname if not provided
         nickname: userVehicle.nickname,
-        imageUrl: 'https://static.carfromjapan.com/spec_8102021a-ee22-42ce-af9b-1c5b998f44ba_640_0', // Add a default image if not provided
-        // imageUrl: vehicle.imageUrl,
+        // imageUrl: 'https://static.carfromjapan.com/spec_8102021a-ee22-42ce-af9b-1c5b998f44ba_640_0', // Add a default image if not provided
+        imageUrl: vehicle.imageUrl,
         registrationNumber: userVehicle.registration_number, // From UserVehicle
         make: vehicle.make,
         model: vehicle.model,
@@ -178,7 +178,8 @@ router.get('/vehicles/:userId', async (req, res) => {
         events.push({
           type: 'License Expiry',
           date: userVehicle.license_expiry_date,
-          vehicle: `${vehicle.make} ${vehicle.model}`,
+          vehicle: userVehicle.nickname,
+          // vehicle: `${vehicle.make} ${vehicle.model}`,
           urgency: userVehicle.license_expiry_date, // Use date for sorting
         });
       }
@@ -188,7 +189,8 @@ router.get('/vehicles/:userId', async (req, res) => {
         events.push({
           type: 'Insurance Expiry',
           date: userVehicle.insurance_expiry_date,
-          vehicle: `${vehicle.make} ${vehicle.model}`,
+          vehicle: userVehicle.nickname,
+          // vehicle: `${vehicle.make} ${vehicle.model}`,
           urgency: userVehicle.insurance_expiry_date, // Use date for sorting
         });
       }
@@ -200,7 +202,8 @@ router.get('/vehicles/:userId', async (req, res) => {
           type: 'Service Due',
           date: null, // No date, only mileage
           mileageDifference: mileageDifference,
-          vehicle: `${vehicle.make} ${vehicle.model}`,
+          vehicle: userVehicle.nickname,
+          // vehicle: `${vehicle.make} ${vehicle.model}`,
           urgency: mileageDifference, // Use mileage difference for sorting
         });
       }
@@ -282,6 +285,43 @@ router.post('/maintenance', async (req, res) => {
     res.status(201).json({ message: 'Record saved successfully' });
   } catch (error) {
     res.status(500).json({ error: 'Error saving record' });
+  }
+});
+
+// Route: Update Vehicle Expiry Dates (License, Insurance, Emissions)
+router.put('/vehicles/expiry/:vehicleId', async (req, res) => {
+  try {
+    const { vehicleId } = req.params;
+    const { expiryType, newDate } = req.body;
+    
+    // Validate input
+    if (!vehicleId || !expiryType || !newDate) {
+      return res.status(400).json({ message: 'Missing required fields' });
+    }
+    
+    // Ensure expiryType is valid
+    const validExpiryTypes = ['license_expiry_date', 'insurance_expiry_date', 'emmissions_expiry_date'];
+    if (!validExpiryTypes.includes(expiryType)) {
+      return res.status(400).json({ message: 'Invalid expiry type' });
+    }
+    
+    // Find and update the user vehicle
+    const userVehicle = await UserVehicle.findOne({ vehicle: vehicleId });
+    if (!userVehicle) {
+      return res.status(404).json({ message: 'Vehicle not found' });
+    }
+    
+    // Update the specific expiry date
+    userVehicle[expiryType] = new Date(newDate);
+    await userVehicle.save();
+    
+    res.status(200).json({ 
+      message: 'Expiry date updated successfully',
+      vehicle: userVehicle
+    });
+  } catch (error) {
+    console.error('Error updating expiry date:', error);
+    res.status(500).json({ message: 'Internal server error' });
   }
 });
 
