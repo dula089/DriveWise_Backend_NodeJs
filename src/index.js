@@ -15,6 +15,7 @@ app.use(express.json());
 
 // Routes
 app.use("/api/auth", require("./routes/authRoutes"));
+app.use("/api", require("./routes/routes"));
 app.use("/api/user", require("./routes/userRoutes"));
 
 // Assuming 'app' is your Express application instance
@@ -24,7 +25,7 @@ app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 const errorHandler = require("./middleware/errorHandler");
 app.use(errorHandler);
 
-app.use("/api", routes);
+// app.use("/api", routes);
 
 // Start Server
 
