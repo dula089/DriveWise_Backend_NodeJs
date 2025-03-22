@@ -1,6 +1,8 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const User = require("../models/user");
+const blacklist = new Set(); // Temporary storage for invalidated tokens
+
 
 // User Registration
 exports.register = async (req, res) => {
@@ -50,12 +52,42 @@ exports.login = async (req, res) => {
 exports.protectedRoute = (req, res) => {
   res.json({ message: "Welcome to the protected route!", user: req.user });
 };
+
 exports.logout = async (req, res) => {
   try {
-    // Invalidate user session by clearing refresh token
-    await User.findByIdAndUpdate(req.user.userId, { refreshToken: null });
+    const token = req.headers.authorization?.split(" ")[1];
+    if (!token) {
+      return res.status(400).json({ message: "No token provided" });
+    }
+
+    blacklist.add(token); // Blacklist token to prevent reuse
     res.json({ message: "Logged out successfully" });
   } catch (error) {
     res.status(500).json({ message: "Server Error", error: error.message });
+  }
+};
+
+// Modify authMiddleware to check blacklisted tokens
+const authMiddleware = (req, res, next) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return res.status(401).json({ message: "Unauthorized: No token provided" });
+  }
+
+  const token = authHeader.split(" ")[1];
+
+  if (blacklist.has(token)) {
+    return res.status(401).json({ message: "Token is invalidated. Please log in again." });
+  }
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = decoded;
+    next();
+  } catch (error) {
+    if (error.name === "TokenExpiredError") {
+      return res.status(401).json({ message: "Token expired, please login again" });
+    }
+    return res.status(403).json({ message: "Forbidden: Invalid token" });
   }
 };
