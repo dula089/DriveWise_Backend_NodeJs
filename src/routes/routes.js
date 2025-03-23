@@ -7,6 +7,9 @@ const Vehicle = require('../models/Vehicle');
 const EO = require('../models/EngineOil');
 const TO = require('../models/TransmissionOil');
 const BO = require('../models/BrakeOil');
+const EngineOil = require('../models/EngineOil');
+const TransmissionOil = require('../models/TransmissionOil');
+const BrakeOil = require('../models/BrakeOil');
 const AirFilter = require('../models/AirFilter');
 const OilFilter = require('../models/OilFilter');
 const UserVehicle = require('../models/UserVehicle');
@@ -311,5 +314,41 @@ router.put('/vehicles/expiry/:vehicleId', async (req, res) => {
     res.status(500).json({ message: 'Internal server error' });
   }
 });
+
+
+router.get('/products', async (req, res) => {
+  // const {category} = req.body;
+  const { category } = req.query;
+  console.log(`Received request for category: ${category}`);
+
+  try {
+    let products;
+    switch (category) {
+      case 'engine_oil':
+        products = await EO.find();
+        break;
+      case 'transmission_oil':
+        products = await TransmissionOil.find();
+        break;
+      case 'brake_oil':
+        products = await BrakeOil.find();
+        break;
+      case 'air_filter':
+        products = await AirFilter.find();
+        break;
+      default:
+        console.error('Invalid category:', category);
+        return res.status(400).json({ message: 'Invalid category' });
+    }
+
+    console.log(`Fetched ${products.length} products`);
+
+    res.json(products);
+  } catch (error) {
+    console.error('Error fetching products:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
 
 module.exports = router;
