@@ -6,7 +6,9 @@ const express = require('express');
 const Vehicle = require('../models/Vehicle');
 const EO = require('../models/EngineOil');
 const TO = require('../models/TransmissionOil');
+const BO = require('../models/BrakeOil');
 const AirFilter = require('../models/AirFilter');
+const OilFilter = require('../models/OilFilter');
 const UserVehicle = require('../models/UserVehicle');
 const User = require('../models/user');
 const ServiceRecords = require('../models/ServiceRecords')
@@ -150,7 +152,9 @@ router.get('/vehicles/:userId', async (req, res) => {
         specifications: {
           'Engine Oil': vehicle.engine_oil,
           'Transmission Oil': vehicle.transmission_oil,
-          'Air Filter': vehicle.air_filter,
+          'Brake Oil': vehicle.brake_oil,
+          // 'Air Filter': vehicle.air_filter,
+          'Oil Filter': vehicle.oil_filter,
         },
       };
     });
@@ -167,6 +171,16 @@ router.get('/vehicles/:userId', async (req, res) => {
           date: userVehicle.license_expiry_date,
           vehicle: userVehicle.nickname,
           urgency: userVehicle.license_expiry_date,
+        });
+      }
+
+      // Add emissions test expiry event
+      if (userVehicle.emmissions_expiry_date) {
+        events.push({
+          type: 'Emissions Certificate Expiry',
+          date: userVehicle.emmissions_expiry_date,
+          vehicle: userVehicle.nickname,
+          urgency: userVehicle.emmissions_expiry_date,
         });
       }
 
