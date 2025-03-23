@@ -316,38 +316,29 @@ router.put('/vehicles/expiry/:vehicleId', async (req, res) => {
 
 
 router.get('/products', async (req, res) => {
-  // const {category} = req.body;
-  const { category } = req.query;
-  console.log(`Received request for category: ${category}`);
-
   try {
-    let products;
-    switch (category) {
-      case 'engine_oil':
-        products = await EO.find();
-        break;
-      case 'transmission_oil':
-        products = await TransmissionOil.find();
-        break;
-      case 'brake_oil':
-        products = await BrakeOil.find();
-        break;
-      case 'air_filter':
-        products = await AirFilter.find();
-        break;
-      default:
-        console.error('Invalid category:', category);
-        return res.status(400).json({ message: 'Invalid category' });
-    }
+    const engineOils = await EngineOil.find();
+    const transmissionOils = await TransmissionOil.find();
+    const brakeOils = await BrakeOil.find();
+    const airFilters = await AirFilter.find();
 
-    console.log(`Fetched ${products.length} products`);
+    console.log(`Fetched ${engineOils.length} engine oils`);
+    console.log(`Fetched ${transmissionOils.length} transmission oils`);
+    console.log(`Fetched ${brakeOils.length} brake oils`);
+    console.log(`Fetched ${airFilters.length} air filters`);
 
-    res.json(products);
+    res.json({
+      engine_oil: engineOils,
+      transmission_oil: transmissionOils,
+      brake_oil: brakeOils,
+      air_filter: airFilters,
+
+    });
+
   } catch (error) {
     console.error('Error fetching products:', error);
     res.status(500).json({ message: 'Internal server error' });
   }
 });
-
 
 module.exports = router;
