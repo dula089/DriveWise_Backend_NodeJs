@@ -155,6 +155,7 @@ router.get('/vehicles/:userId', async (req, res) => {
           'Brake Oil': vehicle.brake_oil,
           // 'Air Filter': vehicle.air_filter,
           'Oil Filter': vehicle.oil_filter,
+          'Coolant': vehicle.coolant,
         },
       };
     });
