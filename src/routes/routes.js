@@ -349,6 +349,40 @@ router.get('/products', async (req, res) => {
     res.status(500).json({ message: 'Internal server error' });
   }
 });
+// In routes.js, update the /vehicleSpecs/:make/:model/:year/:engine route
+router.get('/vehicleSpecs/:make/:model/:year/:engine', async (req, res) => {
+  try {
+    const { make, model, year, engine } = req.params;
+    
+    // Find the vehicle that matches the criteria
+    const vehicle = await Vehicle.findOne({ 
+      make: make,
+      model: model,
+      year: parseInt(year), // Convert to number to match schema
+      engine_type: engine
+    });
+    
+    if (!vehicle) {
+      return res.status(404).json({ message: 'Vehicle specifications not found' });
+    }
+    
+    // Return the specifications with image URL
+    const specs = {
+      engine: vehicle.engine_type,
+      engineOil: vehicle.engine_oil,
+      transmissionOil: vehicle.transmission_oil,
+      brakeOil: vehicle.brake_oil,
+      oilFilter: vehicle.oil_filter,
+      coolant: vehicle.coolant,
+      imageUrl: vehicle.imageUrl // Include the image URL
+    };
+    
+    res.json(specs);
+  } catch (error) {
+    console.error('Error fetching vehicle specs:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
 
 
 module.exports = router;
