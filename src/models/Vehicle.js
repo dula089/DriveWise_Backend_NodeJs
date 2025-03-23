@@ -8,7 +8,8 @@ const vehicleSchema = new mongoose.Schema({
   year: { type: Number, required: true },
   engine_oil: { type: String, required: true},
   transmission_oil: { type: String, required: true},
-  air_filter: { type: String, required: true},
+  brake_oil: { type: String, required: true},
+  oil_filter: { type: String, required: true},
   imageUrl: { type: String, required: true},
 }, { collection: 'Vehicles' });
 

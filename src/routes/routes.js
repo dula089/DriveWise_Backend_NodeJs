@@ -4,19 +4,21 @@ const express = require('express');
 
 
 const Vehicle = require('../models/Vehicle');
-const Brand = require('../models/Brand');
 const EO = require('../models/EngineOil');
 const TO = require('../models/TransmissionOil');
+const BO = require('../models/BrakeOil');
 const EngineOil = require('../models/EngineOil');
 const TransmissionOil = require('../models/TransmissionOil');
 const BrakeOil = require('../models/BrakeOil');
 const AirFilter = require('../models/AirFilter');
+const OilFilter = require('../models/OilFilter');
 const UserVehicle = require('../models/UserVehicle');
 const User = require('../models/user');
 const ServiceRecords = require('../models/ServiceRecords')
 
 const router = express.Router();
 
+// Route: Get All Vehicle Models
 router.get('/makes', async (req, res) => {
   try {
     const makes = await Vehicle.distinct('make');
@@ -79,12 +81,10 @@ router.post('/addVehicle', async (req, res) => {
     await newUserVehicle.save();
   
     // Add the new UserVehicle to the user's vehicle_ids array
-    // const user = await User.findById(userId);
     const user = await User.findById(req.body.userId);
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
-    // user.vehicle_ids.push(vehicle.vehicle_id);
     user.vehicle_ids.push(vehicle._id);
     await user.save();
   
@@ -122,15 +122,6 @@ router.delete('/removeUserVehicle', async (req, res) => {
     res.status(500).json({ message: 'Internal server error' });
   }
 });
-  
-
-// Route: Get User's Vehicles
-router.get('/userVehicles/:userId', async (req, res) => {
-  const user = await User.findById(req.params.userId).populate('vehicle_ids');
-  if (!user) return res.status(404).json({ message: 'User not found' });
-
-  res.json(user.vehicle_ids);
-});
 
 // Route: Get All Vehicles (or vehicles for a specific user)
 router.get('/vehicles/:userId', async (req, res) => {
@@ -149,9 +140,7 @@ router.get('/vehicles/:userId', async (req, res) => {
       const vehicle = userVehicle.vehicle;
       return {
         id: vehicle._id,
-        // nickname: `${vehicle.make} ${vehicle.model}`, // Add a default nickname if not provided
         nickname: userVehicle.nickname,
-        // imageUrl: 'https://static.carfromjapan.com/spec_8102021a-ee22-42ce-af9b-1c5b998f44ba_640_0', // Add a default image if not provided
         imageUrl: vehicle.imageUrl,
         registrationNumber: userVehicle.registration_number, // From UserVehicle
         make: vehicle.make,
@@ -166,7 +155,9 @@ router.get('/vehicles/:userId', async (req, res) => {
         specifications: {
           'Engine Oil': vehicle.engine_oil,
           'Transmission Oil': vehicle.transmission_oil,
-          'Air Filter': vehicle.air_filter,
+          'Brake Oil': vehicle.brake_oil,
+          // 'Air Filter': vehicle.air_filter,
+          'Oil Filter': vehicle.oil_filter,
         },
       };
     });
@@ -182,8 +173,17 @@ router.get('/vehicles/:userId', async (req, res) => {
           type: 'License Expiry',
           date: userVehicle.license_expiry_date,
           vehicle: userVehicle.nickname,
-          // vehicle: `${vehicle.make} ${vehicle.model}`,
-          urgency: userVehicle.license_expiry_date, // Use date for sorting
+          urgency: userVehicle.license_expiry_date,
+        });
+      }
+
+      // Add emissions test expiry event
+      if (userVehicle.emmissions_expiry_date) {
+        events.push({
+          type: 'Emissions Certificate Expiry',
+          date: userVehicle.emmissions_expiry_date,
+          vehicle: userVehicle.nickname,
+          urgency: userVehicle.emmissions_expiry_date,
         });
       }
 
@@ -193,8 +193,7 @@ router.get('/vehicles/:userId', async (req, res) => {
           type: 'Insurance Expiry',
           date: userVehicle.insurance_expiry_date,
           vehicle: userVehicle.nickname,
-          // vehicle: `${vehicle.make} ${vehicle.model}`,
-          urgency: userVehicle.insurance_expiry_date, // Use date for sorting
+          urgency: userVehicle.insurance_expiry_date, 
         });
       }
 
@@ -206,8 +205,7 @@ router.get('/vehicles/:userId', async (req, res) => {
           date: null, // No date, only mileage
           mileageDifference: mileageDifference,
           vehicle: userVehicle.nickname,
-          // vehicle: `${vehicle.make} ${vehicle.model}`,
-          urgency: mileageDifference, // Use mileage difference for sorting
+          urgency: mileageDifference,
         });
       }
 
@@ -235,18 +233,6 @@ router.get('/vehicles/:userId', async (req, res) => {
     res.status(500).json({ message: 'Internal server error' });
   }
 });
-
-router.get('/brands', async (req, res) => {
-  try {
-    const brands = await Brand.distinct('name');
-    console.log("Fetched makes:", brands); // just for Debugging
-    res.json(brands);
-  } catch (error) {
-    console.error("Error fetching makes:", error);
-    res.status(500).json({ message: "Internal server error" });
-  }
-});
-
 
 // Route: Update Vehicle Mileage
 router.put('/updateMileage', async (req, res) => {
@@ -295,7 +281,7 @@ router.post('/maintenance', async (req, res) => {
 router.put('/vehicles/expiry/:vehicleId', async (req, res) => {
   try {
     const { vehicleId } = req.params;
-    const { expiryType, newDate } = req.body;
+    const { expiryType, newDate, userID} = req.body;
     
     // Validate input
     if (!vehicleId || !expiryType || !newDate) {
@@ -307,9 +293,9 @@ router.put('/vehicles/expiry/:vehicleId', async (req, res) => {
     if (!validExpiryTypes.includes(expiryType)) {
       return res.status(400).json({ message: 'Invalid expiry type' });
     }
-    
+
     // Find and update the user vehicle
-    const userVehicle = await UserVehicle.findOne({ vehicle: vehicleId });
+    const userVehicle = await UserVehicle.findOne({ vehicle: vehicleId, user_id: userID});
     if (!userVehicle) {
       return res.status(404).json({ message: 'Vehicle not found' });
     }
