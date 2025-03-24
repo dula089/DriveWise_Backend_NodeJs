@@ -10,6 +10,7 @@ const vehicleSchema = new mongoose.Schema({
   transmission_oil: { type: String, required: true},
   brake_oil: { type: String, required: true},
   oil_filter: { type: String, required: true},
+  coolant: { type: String, required : true},
   imageUrl: { type: String, required: true},
 }, { collection: 'Vehicles' });
 

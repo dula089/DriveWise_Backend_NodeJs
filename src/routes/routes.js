@@ -158,6 +158,7 @@ router.get('/vehicles/:userId', async (req, res) => {
           'Brake Oil': vehicle.brake_oil,
           // 'Air Filter': vehicle.air_filter,
           'Oil Filter': vehicle.oil_filter,
+          'Coolant': vehicle.coolant,
         },
       };
     });
@@ -316,38 +317,121 @@ router.put('/vehicles/expiry/:vehicleId', async (req, res) => {
 
 
 router.get('/products', async (req, res) => {
-  // const {category} = req.body;
-  const { category } = req.query;
-  console.log(`Received request for category: ${category}`);
-
   try {
-    let products;
-    switch (category) {
-      case 'engine_oil':
-        products = await EO.find();
-        break;
-      case 'transmission_oil':
-        products = await TransmissionOil.find();
-        break;
-      case 'brake_oil':
-        products = await BrakeOil.find();
-        break;
-      case 'air_filter':
-        products = await AirFilter.find();
-        break;
-      default:
-        console.error('Invalid category:', category);
-        return res.status(400).json({ message: 'Invalid category' });
-    }
+    const engineOils = await EngineOil.find();
+    const transmissionOils = await TransmissionOil.find();
+    const brakeOils = await BrakeOil.find();
+    const airFilters = await AirFilter.find();
 
-    console.log(`Fetched ${products.length} products`);
+    console.log(`Fetched ${engineOils.length} engine oils`);
+    console.log(`Fetched ${transmissionOils.length} transmission oils`);
+    console.log(`Fetched ${brakeOils.length} brake oils`);
+    console.log(`Fetched ${airFilters.length} air filters`);
 
-    res.json(products);
+    res.json({
+      engine_oil: engineOils,
+      transmission_oil: transmissionOils,
+      brake_oil: brakeOils,
+      air_filter: airFilters,
+
+    });
+
   } catch (error) {
     console.error('Error fetching products:', error);
     res.status(500).json({ message: 'Internal server error' });
   }
 });
+// In routes.js, update the /vehicleSpecs/:make/:model/:year/:engine route
+router.get('/vehicleSpecs/:make/:model/:year/:engine', async (req, res) => {
+  try {
+    const { make, model, year, engine } = req.params;
+    
+    // Find the vehicle that matches the criteria
+    const vehicle = await Vehicle.findOne({ 
+      make: make,
+      model: model,
+      year: parseInt(year), // Convert to number to match schema
+      engine_type: engine
+    });
+    
+    if (!vehicle) {
+      return res.status(404).json({ message: 'Vehicle specifications not found' });
+    }
+    
+    // Return the specifications with image URL
+    const specs = {
+      engine: vehicle.engine_type,
+      engineOil: vehicle.engine_oil,
+      transmissionOil: vehicle.transmission_oil,
+      brakeOil: vehicle.brake_oil,
+      oilFilter: vehicle.oil_filter,
+      coolant: vehicle.coolant,
+      imageUrl: vehicle.imageUrl // Include the image URL
+    };
+    
+    res.json(specs);
+  } catch (error) {
+    console.error('Error fetching vehicle specs:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+
+// router.get('/products/recommendations/:vehicleId', async (req, res) => {
+//   try {
+//     const vehicleId = req.params.vehicleId;
+//     const vehicle = await Vehicle.findById(vehicleId);
+
+//     if (!vehicle) {
+//       return res.status(404).json({ message: 'Vehicle not found' });
+//     }
+
+//     // Get the vehicle's specifications
+//     const { engineOilType, transmissionOilType, brakeOilType, airFilterType, coolantType } = vehicle;
+
+//     // Fetch only the products that match the vehicle's specifications
+//     const engineOils = await EngineOil.find({ oilType: engineOilType });
+//     const transmissionOils = await TransmissionOil.find({ oilType: transmissionOilType });
+//     const brakeOils = await BrakeOil.find({ oilType: brakeOilType });
+//     const airFilters = await AirFilter.find({ filterType: airFilterType });
+//     const coolants = await Coolant.find({ coolantType: coolantType });
+
+//     console.log(`Fetched ${engineOils.length} engine oils`);
+//     console.log(`Fetched ${transmissionOils.length} transmission oils`);
+//     console.log(`Fetched ${brakeOils.length} brake oils`);
+//     console.log(`Fetched ${airFilters.length} air filters`);
+
+//     res.json({
+//       engine_oil: engineOils,
+//       transmission_oil: transmissionOils,
+//       brake_oil: brakeOils,
+//       air_filter: airFilters,
+//       coolant: coolants,
+//     });
+
+//   } catch (error) {
+//     console.error('Error fetching filtered products:', error);
+//     res.status(500).json({ message: 'Internal server error' });
+//   }
+// });
+
+// router.get('/products', async (req, res) => {
+//   try {
+//       let { category, brand, minPrice, maxPrice } = req.query;
+
+//       let query = {};
+//       if (category) query.category = category;
+//       if (brand) query.brand = brand;
+//       if (minPrice) query.price = { $gte: parseFloat(minPrice) };
+//       if (maxPrice) query.price = { ...query.price, $lte: parseFloat(maxPrice) };
+
+//       let products = await Product.find(query);
+//       res.json(products);
+//   } catch (error) {
+//       console.error("Error fetching products:", error);
+//       res.status(500).json({ message: "Internal server error" });
+//   }
+// });
 
 
 module.exports = router;
