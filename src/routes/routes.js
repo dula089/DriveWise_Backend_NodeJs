@@ -9,7 +9,7 @@ const TO = require('../models/TransmissionOil');
 const BO = require('../models/BrakeOil');
 const AirFilter = require('../models/AirFilter');
 const OilFilter = require('../models/OilFilter');
-const UserVehicle = require('../models/UserVehicle');
+const UserVehicle = require('../models/userVehicle');
 const User = require('../models/user');
 const ServiceRecords = require('../models/ServiceRecords')
 
@@ -137,6 +137,7 @@ router.get('/vehicles/:userId', async (req, res) => {
       const vehicle = userVehicle.vehicle;
       return {
         id: vehicle._id,
+        vehicleRef: userVehicle._id,
         nickname: userVehicle.nickname,
         imageUrl: vehicle.imageUrl,
         registrationNumber: userVehicle.registration_number, // From UserVehicle
@@ -308,6 +309,126 @@ router.put('/vehicles/expiry/:vehicleId', async (req, res) => {
   } catch (error) {
     console.error('Error updating expiry date:', error);
     res.status(500).json({ message: 'Internal server error' });
+  }
+});
+router.post('/saveMaintenanceRecord', async (req, res) => {
+  try {
+    const {  vehicleId, date, odometer, engineOil, transmissionOil, airFilter, brakeFluid } = req.body;
+
+    const newRecord = new ServiceRecords({
+      // user_id: user_id,
+      vehicle_id: vehicleId,
+      date: date,
+      odometer: odometer,
+      engine_oil: engineOil,
+      transmission_oil: transmissionOil,
+      airfilters: airFilter,
+      brakeoil: brakeFluid,
+    });
+
+    console.log(vehicleId);
+
+    await newRecord.save();
+    res.status(201).json({ message: 'Record saved successfully' });
+  } catch (error) {
+    res.status(500).json({ error: 'Error saving record' });
+  }
+});
+
+router.get('/engineOils', async (req, res) => {
+  try {
+    const engineOils = await EO.find({});
+    const uniqueNames = new Set();
+    const formattedOils = [];
+
+    engineOils.forEach(oil => {
+      const combinedName = `${oil.brand} ${oil.name}`; // Combine brand and name
+      if (!uniqueNames.has(combinedName)) {
+        uniqueNames.add(combinedName);
+        formattedOils.push({
+          id: oil.prod_id,
+          name: combinedName, // Use the combined name
+        });
+      }
+    });
+
+    res.json(formattedOils);
+  } catch (error) {
+    console.error("Error fetching engine oils:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+
+
+router.get('/transmissionOils', async (req, res) => {
+  try {
+    const transmissionOils = await TO.find({}); // Fetch transmission oils from the database
+    const uniqueNames = new Set(); // To ensure unique names
+    const formattedOils = [];
+
+    transmissionOils.forEach(oil => {
+      const combinedName = `${oil.brand} ${oil.name}`; // Combine brand and name
+      if (!uniqueNames.has(combinedName)) {
+        uniqueNames.add(combinedName);
+        formattedOils.push({
+          id: oil.prod_id, // Use the correct field for ID
+          name: combinedName, // Use the combined name
+        });
+      }
+    });
+
+    res.json(formattedOils); // Send the formatted data as a response
+  } catch (error) {
+    console.error("Error fetching transmission oils:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+router.get('/oilFilters', async (req, res) => {
+  try {
+    const oilFilters = await OilFilter.find({});
+    const formattedFilters = oilFilters.map(filter => ({
+      id: filter.prod_id,
+      name: filter.name
+    }));
+    res.json(formattedFilters);
+  } catch (error) {
+    console.error("Error fetching oil filters:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+router.get('/brakeFluids', async (req, res) => {
+  try {
+    const brakeFluids = await BO.find({});
+    const formattedFluids = brakeFluids.map(fluid => ({
+      id: fluid.prod_id,
+      name: fluid.name // Only return the name
+    }));
+    res.json(formattedFluids);
+  } catch (error) {
+    console.error("Error fetching brake fluids:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+router.get('/maintenanceHistory/:vehicleId', async (req, res) => {
+  try {
+    const vehicleId = req.params.vehicleId;
+    const history = await ServiceRecords.find({ vehicle_id: mongoose.Types.ObjectId(vehicleId) }).sort({ date: -1 });
+    res.json(history);
+  } catch (error) {
+    console.error('Error fetching maintenance history:', error);
+    res.status(500).json({ message: 'Internal server error', error: error.message }); // Include error message
+  }
+});
+
+
+router.get('/maintenanceHistory', async (req, res) => { // Removed /:vehicleId
+  try {
+    const history = await ServiceRecords.find().sort({ date: -1 }); // Get all records
+    res.json(history);
+  } catch (error) {
+    console.error('Error fetching maintenance history:', error);
+    res.status(500).json({ message: 'Internal server error', error: error.message });
   }
 });
 
