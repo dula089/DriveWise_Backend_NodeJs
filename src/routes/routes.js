@@ -341,4 +341,62 @@ router.get('/products', async (req, res) => {
   }
 });
 
+
+// router.get('/products/recommendations/:vehicleId', async (req, res) => {
+//   try {
+//     const vehicleId = req.params.vehicleId;
+//     const vehicle = await Vehicle.findById(vehicleId);
+
+//     if (!vehicle) {
+//       return res.status(404).json({ message: 'Vehicle not found' });
+//     }
+
+//     // Get the vehicle's specifications
+//     const { engineOilType, transmissionOilType, brakeOilType, airFilterType, coolantType } = vehicle;
+
+//     // Fetch only the products that match the vehicle's specifications
+//     const engineOils = await EngineOil.find({ oilType: engineOilType });
+//     const transmissionOils = await TransmissionOil.find({ oilType: transmissionOilType });
+//     const brakeOils = await BrakeOil.find({ oilType: brakeOilType });
+//     const airFilters = await AirFilter.find({ filterType: airFilterType });
+//     const coolants = await Coolant.find({ coolantType: coolantType });
+
+//     console.log(`Fetched ${engineOils.length} engine oils`);
+//     console.log(`Fetched ${transmissionOils.length} transmission oils`);
+//     console.log(`Fetched ${brakeOils.length} brake oils`);
+//     console.log(`Fetched ${airFilters.length} air filters`);
+
+//     res.json({
+//       engine_oil: engineOils,
+//       transmission_oil: transmissionOils,
+//       brake_oil: brakeOils,
+//       air_filter: airFilters,
+//       coolant: coolants,
+//     });
+
+//   } catch (error) {
+//     console.error('Error fetching filtered products:', error);
+//     res.status(500).json({ message: 'Internal server error' });
+//   }
+// });
+
+// router.get('/products', async (req, res) => {
+//   try {
+//       let { category, brand, minPrice, maxPrice } = req.query;
+
+//       let query = {};
+//       if (category) query.category = category;
+//       if (brand) query.brand = brand;
+//       if (minPrice) query.price = { $gte: parseFloat(minPrice) };
+//       if (maxPrice) query.price = { ...query.price, $lte: parseFloat(maxPrice) };
+
+//       let products = await Product.find(query);
+//       res.json(products);
+//   } catch (error) {
+//       console.error("Error fetching products:", error);
+//       res.status(500).json({ message: "Internal server error" });
+//   }
+// });
+
+
 module.exports = router;
