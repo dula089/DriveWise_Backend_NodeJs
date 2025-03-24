@@ -149,7 +149,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ## Official Channels
 - *Website*: [www.drivewiselk.com](https://www.drivewiselk.com/)
-- *Email*: [Not specified in the code]
+- *Email*: [drivewise.care@gmail.com]
 
 ## Social Media
 - *Instagram*: [@_drivewise_](https://www.instagram.com/__drivewise__)
