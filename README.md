@@ -8,7 +8,6 @@ DriveWise is a comprehensive vehicle maintenance tracking system that helps user
 
 ## Project Structure
 
-
 DRIVEWISE_BACKEND_NODEJS/
 ├── node_modules/          # Dependencies
 ├── src/                   # Source code
