@@ -88,12 +88,10 @@ DRIVEWISE_BACKEND_NODEJS/
 3. Configure environment variables:
    Create a .env file in the root directory with the following variables:
    
-   PORT=3000
-   MONGODB_URI=mongodb://localhost:27017/drivewise
-   JWT_SECRET=your_jwt_secret_key
-   EMAIL_USER=your_email@example.com
-   EMAIL_PASS=your_email_password
-   
+  - PORT=5000
+  - MONGODB_URI=mongodb://localhost:27017/drivewise
+  - JWT_SECRET=your_jwt_secret_key
+  
 
 4. Start the server:
    
