@@ -12,6 +12,8 @@ const TransmissionOil = require('../models/TransmissionOil');
 const BrakeOil = require('../models/BrakeOil');
 const AirFilter = require('../models/AirFilter');
 const OilFilter = require('../models/OilFilter');
+const Coolant = require('../models/Coolant');
+
 const UserVehicle = require('../models/UserVehicle');
 const User = require('../models/user');
 const ServiceRecords = require('../models/ServiceRecords')
@@ -321,18 +323,22 @@ router.get('/products', async (req, res) => {
     const engineOils = await EngineOil.find();
     const transmissionOils = await TransmissionOil.find();
     const brakeOils = await BrakeOil.find();
-    const airFilters = await AirFilter.find();
+    const oilFilters = await OilFilter.find();
+    const Coolants = await Coolant.find();
+
 
     console.log(`Fetched ${engineOils.length} engine oils`);
     console.log(`Fetched ${transmissionOils.length} transmission oils`);
     console.log(`Fetched ${brakeOils.length} brake oils`);
-    console.log(`Fetched ${airFilters.length} air filters`);
+    console.log(`Fetched ${Coolants.length} coolants`);
+    console.log(`Fetched ${oilFilters.length} oil filters`);
 
     res.json({
       engine_oil: engineOils,
       transmission_oil: transmissionOils,
       brake_oil: brakeOils,
-      air_filter: airFilters,
+      oil_filter: oilFilters,
+      Coolants: Coolants,
 
     });
 
@@ -365,7 +371,7 @@ router.get('/vehicleSpecs/:make/:model/:year/:engine', async (req, res) => {
       transmissionOil: vehicle.transmission_oil,
       brakeOil: vehicle.brake_oil,
       oilFilter: vehicle.oil_filter,
-      coolant: vehicle.coolant,
+      Coolant: vehicle.Coolant,
       imageUrl: vehicle.imageUrl // Include the image URL
     };
     
