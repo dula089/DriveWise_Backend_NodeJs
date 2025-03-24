@@ -3,7 +3,6 @@ const jwt = require("jsonwebtoken");
 const User = require("../models/user");
 const blacklist = new Set(); // Temporary storage for invalidated tokens
 
-
 // User Registration
 exports.register = async (req, res) => {
   try {
@@ -77,7 +76,9 @@ const authMiddleware = (req, res, next) => {
   const token = authHeader.split(" ")[1];
 
   if (blacklist.has(token)) {
-    return res.status(401).json({ message: "Token is invalidated. Please log in again." });
+    return res
+      .status(401)
+      .json({ message: "Token is invalidated. Please log in again." });
   }
 
   try {
@@ -86,8 +87,40 @@ const authMiddleware = (req, res, next) => {
     next();
   } catch (error) {
     if (error.name === "TokenExpiredError") {
-      return res.status(401).json({ message: "Token expired, please login again" });
+      return res
+        .status(401)
+        .json({ message: "Token expired, please login again" });
     }
     return res.status(403).json({ message: "Forbidden: Invalid token" });
+  }
+};
+// Change Password
+exports.changePassword = async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    const userId = req.user.userId;
+
+    // Find the user
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Verify current password
+    const isMatch = await bcrypt.compare(currentPassword, user.password);
+    if (!isMatch) {
+      return res.status(400).json({ message: "Current password is incorrect" });
+    }
+
+    // Hash the new password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    // Update the password
+    user.password = hashedPassword;
+    await user.save();
+
+    res.json({ message: "Password changed successfully" });
+  } catch (error) {
+    res.status(500).json({ message: "Server Error", error: error.message });
   }
 };
